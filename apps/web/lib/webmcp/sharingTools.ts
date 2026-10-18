@@ -192,8 +192,7 @@ export function registerSharingTools(): Array<() => void> {
 					asVideoId(capId),
 					String(email ?? "").trim(),
 				);
-				if (!result.success)
-					throw new Error(result.error ?? "Failed to revoke viewer");
+				if (!result.success) throw new Error("Failed to revoke viewer");
 				return { capId, revoked: String(email ?? "").trim() };
 			},
 		}),
