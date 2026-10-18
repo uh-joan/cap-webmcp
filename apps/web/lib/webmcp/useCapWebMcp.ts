@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRpcClient } from "@/lib/EffectRuntime";
 import { type LibraryRpc, registerLibraryTools } from "./libraryTools";
 import { registerSharingTools } from "./sharingTools";
+import { registerTranscriptTools } from "./transcriptTools";
 import {
 	MUTATING,
 	READ_ONLY,
@@ -79,6 +80,10 @@ export function useCapWebMcp() {
 
 		withWebMcpGroup("Sharing", "global", () => {
 			unregister.push(...registerSharingTools());
+		});
+
+		withWebMcpGroup("Transcripts & captions", "global", () => {
+			unregister.push(...registerTranscriptTools());
 		});
 
 		return () => {
