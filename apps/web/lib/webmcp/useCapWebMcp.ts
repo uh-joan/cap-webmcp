@@ -6,6 +6,7 @@ import { registerAnalyticsTools } from "./analyticsTools";
 import { registerCommentTools } from "./commentTools";
 import { type LibraryRpc, registerLibraryTools } from "./libraryTools";
 import { registerSharingTools } from "./sharingTools";
+import { registerTeamsTools } from "./teamsTools";
 import { registerTranscriptTools } from "./transcriptTools";
 import {
 	MUTATING,
@@ -94,6 +95,10 @@ export function useCapWebMcp() {
 
 		withWebMcpGroup("Analytics", "global", () => {
 			unregister.push(...registerAnalyticsTools());
+		});
+
+		withWebMcpGroup("Teams & members", "global", () => {
+			unregister.push(...registerTeamsTools());
 		});
 
 		return () => {
