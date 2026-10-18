@@ -6,6 +6,7 @@ import { registerAnalyticsTools } from "./analyticsTools";
 import { registerCapAiTools } from "./capAiTools";
 import { registerCommentTools } from "./commentTools";
 import { type LibraryRpc, registerLibraryTools } from "./libraryTools";
+import { registerLoomTools } from "./loomTools";
 import { registerSharingTools } from "./sharingTools";
 import { registerTeamsTools } from "./teamsTools";
 import { registerTranscriptTools } from "./transcriptTools";
@@ -104,6 +105,10 @@ export function useCapWebMcp() {
 
 		withWebMcpGroup("Cap AI", "global", () => {
 			unregister.push(...registerCapAiTools());
+		});
+
+		withWebMcpGroup("Loom import", "global", () => {
+			unregister.push(...registerLoomTools());
 		});
 
 		return () => {
