@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRpcClient } from "@/lib/EffectRuntime";
 import { registerAnalyticsTools } from "./analyticsTools";
+import { registerCapAiTools } from "./capAiTools";
 import { registerCommentTools } from "./commentTools";
 import { type LibraryRpc, registerLibraryTools } from "./libraryTools";
 import { registerSharingTools } from "./sharingTools";
@@ -99,6 +100,10 @@ export function useCapWebMcp() {
 
 		withWebMcpGroup("Teams & members", "global", () => {
 			unregister.push(...registerTeamsTools());
+		});
+
+		withWebMcpGroup("Cap AI", "global", () => {
+			unregister.push(...registerCapAiTools());
 		});
 
 		return () => {
