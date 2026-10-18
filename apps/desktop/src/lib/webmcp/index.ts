@@ -1,4 +1,7 @@
-import { registerDesktopTools } from "./desktopTools";
+import {
+	registerDesktopPermissionTools,
+	registerDesktopTools,
+} from "./desktopTools";
 import { installModelContextShim } from "./modelContextShim";
 import { withWebMcpGroup } from "./webmcp.service";
 
@@ -15,5 +18,8 @@ export function initCapWebMcp() {
 	installModelContextShim();
 	withWebMcpGroup("Desktop recorder", "global", () => {
 		registerDesktopTools();
+	});
+	withWebMcpGroup("Permissions", "global", () => {
+		registerDesktopPermissionTools();
 	});
 }
