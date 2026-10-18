@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRpcClient } from "@/lib/EffectRuntime";
+import { registerCommentTools } from "./commentTools";
 import { type LibraryRpc, registerLibraryTools } from "./libraryTools";
 import { registerSharingTools } from "./sharingTools";
 import { registerTranscriptTools } from "./transcriptTools";
@@ -84,6 +85,10 @@ export function useCapWebMcp() {
 
 		withWebMcpGroup("Transcripts & captions", "global", () => {
 			unregister.push(...registerTranscriptTools());
+		});
+
+		withWebMcpGroup("Comments", "global", () => {
+			unregister.push(...registerCommentTools());
 		});
 
 		return () => {
