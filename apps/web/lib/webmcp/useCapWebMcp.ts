@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRpcClient } from "@/lib/EffectRuntime";
 import { type LibraryRpc, registerLibraryTools } from "./libraryTools";
+import { registerSharingTools } from "./sharingTools";
 import {
 	MUTATING,
 	READ_ONLY,
@@ -74,6 +75,10 @@ export function useCapWebMcp() {
 
 		withWebMcpGroup("Library", "global", () => {
 			unregister.push(...registerLibraryTools({ rpc }));
+		});
+
+		withWebMcpGroup("Sharing", "global", () => {
+			unregister.push(...registerSharingTools());
 		});
 
 		return () => {
