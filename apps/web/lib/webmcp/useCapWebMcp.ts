@@ -9,6 +9,7 @@ import { type LibraryRpc, registerLibraryTools } from "./libraryTools";
 import { registerLoomTools } from "./loomTools";
 import { registerSettingsTools } from "./settingsTools";
 import { registerSharingTools } from "./sharingTools";
+import { registerStorageTools } from "./storageTools";
 import { registerTeamsTools } from "./teamsTools";
 import { registerTranscriptTools } from "./transcriptTools";
 import {
@@ -114,6 +115,10 @@ export function useCapWebMcp() {
 
 		withWebMcpGroup("Settings & account", "global", () => {
 			unregister.push(...registerSettingsTools());
+		});
+
+		withWebMcpGroup("Storage", "global", () => {
+			unregister.push(...registerStorageTools());
 		});
 
 		return () => {
