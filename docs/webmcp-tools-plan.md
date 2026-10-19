@@ -1,6 +1,16 @@
 # WebMCP tools for Cap: plan for full control
 
-Status: planning. Date: 2026-10-18. Fork: `cap-webmcp` (based on CapSoftware/Cap).
+Status: built. Date: 2026-10-19. Fork: `cap-webmcp` (based on CapSoftware/Cap).
+
+Both phases are implemented on `feat/webmcp` (PR #1): Phase 1 web dashboard
+(11 tool groups, ~55 tools) and Phase 2 desktop (bridge + ~41 tools across
+recorder, permissions, Studio editor/export, library/recovery, captions),
+plus confirm dialogs on both surfaces and an Agent-Enabled catalog widget.
+Lint- and typecheck-clean; the desktop bridge is verified end-to-end against
+the running app (`apps/desktop/webmcp-bridge/{e2e-test,live-check}.mjs`).
+The sections below are the original plan; a few deferred items remain
+(Gif/Mov were since added; the "area" capture target and a desktop catalog
+widget are still open).
 
 ## Goal
 
