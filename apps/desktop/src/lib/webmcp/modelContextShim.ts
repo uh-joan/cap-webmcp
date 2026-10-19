@@ -52,6 +52,29 @@ type ShimGlobals = {
 
 let installed = false;
 
+/** Whether the shim's WebSocket to the bridge is currently open. */
+let shimConnected = false;
+const connectionListeners = new Set<(connected: boolean) => void>();
+
+export function isBridgeConnected(): boolean {
+	return shimConnected;
+}
+
+/** Subscribe to bridge connection changes. Fires immediately with the current state. */
+export function subscribeBridgeConnection(
+	listener: (connected: boolean) => void,
+): () => void {
+	connectionListeners.add(listener);
+	listener(shimConnected);
+	return () => connectionListeners.delete(listener);
+}
+
+function setBridgeConnected(value: boolean) {
+	if (shimConnected === value) return;
+	shimConnected = value;
+	for (const listener of connectionListeners) listener(shimConnected);
+}
+
 export function installModelContextShim() {
 	if (typeof document === "undefined") return;
 	const globals = window as unknown as ShimGlobals;
@@ -129,6 +152,7 @@ export function installModelContextShim() {
 		}
 
 		socket.addEventListener("open", () => {
+			setBridgeConnected(true);
 			send({ type: "hello", token });
 			announce();
 		});
@@ -152,6 +176,7 @@ export function installModelContextShim() {
 	};
 
 	function scheduleReconnect() {
+		setBridgeConnected(false);
 		socket = null;
 		if (reconnectTimer) return;
 		reconnectTimer = setTimeout(() => {
