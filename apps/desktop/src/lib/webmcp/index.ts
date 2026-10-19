@@ -2,6 +2,8 @@ import {
 	registerDesktopPermissionTools,
 	registerDesktopTools,
 } from "./desktopTools";
+import { registerEditorTools } from "./editorTools";
+import { registerLibraryRecoveryTools } from "./libraryRecoveryTools";
 import { installModelContextShim } from "./modelContextShim";
 import { withWebMcpGroup } from "./webmcp.service";
 
@@ -21,5 +23,11 @@ export function initCapWebMcp() {
 	});
 	withWebMcpGroup("Permissions", "global", () => {
 		registerDesktopPermissionTools();
+	});
+	withWebMcpGroup("Studio editor & export", "global", () => {
+		registerEditorTools();
+	});
+	withWebMcpGroup("Library & recovery", "global", () => {
+		registerLibraryRecoveryTools();
 	});
 }
