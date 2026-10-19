@@ -7,7 +7,7 @@ Both phases are implemented on `feat/webmcp` (PR #1): Phase 1 web dashboard
 recorder, permissions, Studio editor/export, library/recovery, captions),
 plus confirm dialogs on both surfaces and an Agent-Enabled catalog widget.
 Lint- and typecheck-clean; the desktop bridge is verified end-to-end against
-the running app (`apps/desktop/webmcp-bridge/{e2e-test,live-check}.mjs`).
+the running app (`webmcp-bridge/{e2e-test,live-check}.mjs`).
 The sections below are the original plan; a few deferred items remain
 (Gif/Mov were since added; the "area" capture target and a desktop catalog
 widget are still open).

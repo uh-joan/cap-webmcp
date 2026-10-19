@@ -14,6 +14,9 @@
  * real desktop recorder. Loopback-only; a shared token guards the WS.
  */
 
+import { readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -25,14 +28,57 @@ import { WebSocketServer } from "ws";
 const PORT = Number(process.env.CAP_WEBMCP_WS_PORT ?? 8787);
 const TOKEN = process.env.CAP_WEBMCP_TOKEN ?? "cap-webmcp-dev";
 const CALL_TIMEOUT_MS = Number(process.env.CAP_WEBMCP_CALL_TIMEOUT_MS ?? 60000);
+/** How long tools/list waits for a first announce when nothing is cached. */
+const LIST_WAIT_MS = Number(process.env.CAP_WEBMCP_LIST_WAIT_MS ?? 8000);
+/**
+ * Where the last-announced tool catalog is cached. MCP clients fetch tools/list
+ * once at connect, before the app's webview has announced, so without this the
+ * list would be empty until a reconnect. Caching lets tools/list return the
+ * known tools immediately; calls still error clearly if the app is not open.
+ */
+const CACHE_FILE = join(tmpdir(), `cap-webmcp-tools.${PORT}.json`);
+
+function loadCachedTools() {
+	try {
+		const parsed = JSON.parse(readFileSync(CACHE_FILE, "utf8"));
+		return Array.isArray(parsed) ? parsed : [];
+	} catch {
+		return [];
+	}
+}
+
+function saveCachedTools(tools) {
+	try {
+		writeFileSync(CACHE_FILE, JSON.stringify(tools));
+	} catch {
+		// Best-effort; a missing cache just means a cold next start.
+	}
+}
 
 /** The most recently connected, authenticated webview socket. */
 let webview = null;
-/** Latest tool schemas announced by the webview. */
-let currentTools = [];
+/** Latest tool schemas announced by the webview (seeded from the cache). */
+let currentTools = loadCachedTools();
+/** Resolvers waiting for the first announce (for a cold tools/list). */
+const announceWaiters = new Set();
 /** In-flight tool calls, keyed by request id. */
 const pending = new Map();
 let nextId = 1;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function resolveAnnounceWaiters() {
+	for (const resolve of announceWaiters) resolve();
+	announceWaiters.clear();
+}
+
+async function waitForTools(timeoutMs) {
+	if (currentTools.length > 0) return;
+	await Promise.race([
+		new Promise((resolve) => announceWaiters.add(resolve)),
+		sleep(timeoutMs),
+	]);
+}
 
 const server = new Server(
 	{ name: "cap-desktop-webmcp", version: "0.1.0" },
@@ -45,14 +91,19 @@ function notifyToolsChanged() {
 		.catch(() => {});
 }
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-	tools: currentTools.map((tool) => ({
-		name: tool.name,
-		description: tool.description,
-		inputSchema: tool.inputSchema ?? { type: "object", properties: {} },
-		annotations: tool.annotations,
-	})),
-}));
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+	// On a cold start with no cache, briefly wait for the app to announce so the
+	// client's one-shot tools/list is populated instead of empty.
+	await waitForTools(LIST_WAIT_MS);
+	return {
+		tools: currentTools.map((tool) => ({
+			name: tool.name,
+			description: tool.description,
+			inputSchema: tool.inputSchema ?? { type: "object", properties: {} },
+			annotations: tool.annotations,
+		})),
+	};
+});
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
 	const { name, arguments: args } = request.params;
@@ -115,6 +166,8 @@ function handleWsMessage(ws, raw) {
 
 	if (message.type === "announce" && Array.isArray(message.tools)) {
 		currentTools = message.tools;
+		saveCachedTools(currentTools);
+		resolveAnnounceWaiters();
 		notifyToolsChanged();
 	} else if (message.type === "result" && message.id) {
 		const entry = pending.get(message.id);
@@ -136,13 +189,22 @@ function startWebSocketServer() {
 		ws.on("close", () => {
 			if (ws === webview) {
 				webview = null;
-				currentTools = [];
-				notifyToolsChanged();
+				// Keep the last-known tools listed so the client UI still shows them;
+				// CallTool returns a clear "app not connected" error while it is closed.
 			}
 		});
 		ws.on("error", () => {});
 	});
 	wss.on("error", (error) => {
+		if (error && error.code === "EADDRINUSE") {
+			// Another bridge already owns the port (e.g. an orphan from a previous
+			// connect). Exit loudly instead of running without a webview, so the
+			// client shows a failure rather than a silent "no tools".
+			process.stderr.write(
+				`[cap-webmcp-bridge] port ${PORT} is already in use by another bridge; exiting.\n`,
+			);
+			process.exit(1);
+		}
 		process.stderr.write(`[cap-webmcp-bridge] ws error: ${error.message}\n`);
 	});
 	process.stderr.write(
@@ -151,8 +213,17 @@ function startWebSocketServer() {
 }
 
 async function main() {
+	// When the MCP client (e.g. Claude Code) detaches its stdio — including on a
+	// reconnect — exit so we release the WS port instead of lingering as an
+	// orphan that the next bridge then collides with.
+	const exit = () => process.exit(0);
+	process.stdin.on("end", exit);
+	process.stdin.on("close", exit);
+
 	startWebSocketServer();
-	await server.connect(new StdioServerTransport());
+	const transport = new StdioServerTransport();
+	transport.onclose = exit;
+	await server.connect(transport);
 }
 
 main().catch((error) => {

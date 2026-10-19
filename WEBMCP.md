@@ -45,7 +45,7 @@ whether the bridge is connected.
 The bridge is registered in [`.mcp.json`](.mcp.json) as `cap-desktop-webmcp`:
 
 ```json
-{ "command": "bun", "args": ["apps/desktop/webmcp-bridge/server.mjs"] }
+{ "command": "bun", "args": ["webmcp-bridge/server.mjs"] }
 ```
 
 An MCP client (e.g. Claude Code) that loads `.mcp.json` spawns the bridge over
@@ -65,8 +65,8 @@ Tauri confirm dialog before running.
 ### Verify the bridge
 
 ```bash
-bun apps/desktop/webmcp-bridge/e2e-test.mjs    # relay unit test (no app needed)
-bun apps/desktop/webmcp-bridge/live-check.mjs  # drives the running app, calls get_recording_state
+bun webmcp-bridge/e2e-test.mjs    # relay unit test (no app needed)
+bun webmcp-bridge/live-check.mjs  # drives the running app, calls get_recording_state
 ```
 
 ---
@@ -118,5 +118,5 @@ Billing (read). Destructive tools prompt via `window.confirm`.
 - `apps/web/lib/webmcp/` — service, hook, tool groups, web confirm handler
 - `apps/web/app/Layout/WebMcpProvider.tsx`, `WebMcpWidget.tsx`
 - `apps/desktop/src/lib/webmcp/` — service, shim, tool groups, widget, confirm
-- `apps/desktop/webmcp-bridge/` — bridge server + e2e/live test harnesses
+- `webmcp-bridge/` — bridge server + e2e/live test harnesses
 - `.mcp.json` — MCP servers (`chrome-devtools`, `cap-desktop-webmcp`)
