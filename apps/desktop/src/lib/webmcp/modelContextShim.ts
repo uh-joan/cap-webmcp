@@ -1,6 +1,6 @@
 /**
  * Installs a `document.modelContext` shim in the Tauri WKWebView, backed by a
- * WebSocket to the local WebMCP bridge (apps/desktop/webmcp-bridge/server.mjs).
+ * WebSocket to the local WebMCP bridge (webmcp-bridge/server.mjs).
  *
  * Why this exists: WebMCP's real `document.modelContext` is a Chrome-only API,
  * and `chrome-devtools-mcp` attaches over CDP, which cannot see Tauri's WKWebView.

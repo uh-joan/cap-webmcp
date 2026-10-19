@@ -12,7 +12,7 @@
 		},
 		"cap-desktop-webmcp": {
 			"command": "bun",
-			"args": ["apps/desktop/webmcp-bridge/server.mjs"]
+			"args": ["webmcp-bridge/server.mjs"]
 		}
 	}
 }
