@@ -15,6 +15,9 @@ const COMPRESSIONS: ExportCompression[] = [
 	"Potato",
 ];
 
+type ExportFormat = "Mp4" | "Gif" | "Mov";
+const FORMATS: ExportFormat[] = ["Mp4", "Gif", "Mov"];
+
 /**
  * Studio editor + export tools. Reads/edits the open editor project and renders
  * it to a video. Project config is passed through as-is: read it with
@@ -122,6 +125,7 @@ export function registerEditorTools(): Array<() => void> {
 	unregister.push(
 		registerWebMcpTool<{
 			projectPath?: string;
+			format?: ExportFormat;
 			fps?: number;
 			width?: number;
 			height?: number;
@@ -129,8 +133,9 @@ export function registerEditorTools(): Array<() => void> {
 		}>({
 			name: "export_video",
 			description:
-				"Render and export the editor project to an MP4 in its project folder. " +
-				"Defaults: the open editor project, 30fps, 1920x1080, 'Web' compression. " +
+				"Render and export the editor project to a file in its project folder. " +
+				"`format` is 'Mp4' (default), 'Gif', or 'Mov'. Defaults: the open editor " +
+				"project, 30fps, 1920x1080; `compression` (Mp4 only) defaults to 'Web'. " +
 				"Returns the exported file path. This can take a while for long recordings.",
 			annotations: MUTATING,
 			inputSchema: {
@@ -140,36 +145,65 @@ export function registerEditorTools(): Array<() => void> {
 						type: "string",
 						description: "Project path (default: the open editor project).",
 					},
+					format: {
+						type: "string",
+						enum: [...FORMATS],
+						description: "Output format (default 'Mp4').",
+					},
 					fps: { type: "integer", minimum: 1, maximum: 120 },
 					width: { type: "integer", minimum: 1 },
 					height: { type: "integer", minimum: 1 },
 					compression: {
 						type: "string",
 						enum: [...COMPRESSIONS],
-						description: "Export quality (default 'Web').",
+						description: "Export quality, Mp4 only (default 'Web').",
 					},
 				},
 			},
-			execute: async ({ projectPath, fps, width, height, compression }) => {
+			execute: async ({
+				projectPath,
+				format,
+				fps,
+				width,
+				height,
+				compression,
+			}) => {
 				const path =
 					String(projectPath ?? "").trim() ||
 					(await commands.getEditorProjectPath());
-				const settings: ExportSettings = {
-					format: "Mp4",
-					fps: typeof fps === "number" ? fps : 30,
-					resolution_base: {
-						x: typeof width === "number" ? width : 1920,
-						y: typeof height === "number" ? height : 1080,
-					},
-					compression:
-						compression && COMPRESSIONS.includes(compression)
-							? compression
-							: "Web",
-					custom_bpp: null,
+				const fmt: ExportFormat = FORMATS.includes(format as ExportFormat)
+					? (format as ExportFormat)
+					: "Mp4";
+				const resolution_base = {
+					x: typeof width === "number" ? width : 1920,
+					y: typeof height === "number" ? height : 1080,
 				};
+				const outFps = typeof fps === "number" ? fps : 30;
+				let settings: ExportSettings;
+				if (fmt === "Gif") {
+					settings = {
+						format: "Gif",
+						fps: outFps,
+						resolution_base,
+						quality: null,
+					};
+				} else if (fmt === "Mov") {
+					settings = { format: "Mov", fps: outFps, resolution_base };
+				} else {
+					settings = {
+						format: "Mp4",
+						fps: outFps,
+						resolution_base,
+						compression:
+							compression && COMPRESSIONS.includes(compression)
+								? compression
+								: "Web",
+						custom_bpp: null,
+					};
+				}
 				const progress = new Channel<FramesRendered>();
 				const output = await commands.exportVideo(path, progress, settings);
-				return { path: output };
+				return { path: output, format: fmt };
 			},
 		}),
 	);
