@@ -75,6 +75,24 @@ export const UNTRUSTED: WebMcpToolAnnotations = {
 	untrustedContentHint: true,
 };
 
+/**
+ * Optional confirmation gate for consequential ("confirm") tools. When set, it
+ * runs before any such tool executes; if it throws, the tool does NOT run and
+ * the agent receives the error. Each app wires its own UI — a native
+ * window.confirm in web, a Tauri dialog in desktop.
+ */
+export type WebMcpConfirmHandler = (tool: {
+	name: string;
+	description: string;
+	annotations?: WebMcpToolAnnotations;
+}) => Promise<void> | void;
+
+let confirmHandler: WebMcpConfirmHandler | null = null;
+
+export function setWebMcpConfirmHandler(handler: WebMcpConfirmHandler | null) {
+	confirmHandler = handler;
+}
+
 const DETECT_INTERVAL_MS = 1000;
 
 const registry = new Map<string, Registered>();
@@ -159,6 +177,13 @@ function attach(entry: Registered) {
 				annotations: tool.annotations,
 				execute: async (args, options) => {
 					try {
+						if (tool.annotations?.consequentialHint && confirmHandler) {
+							await confirmHandler({
+								name: tool.name,
+								description: tool.description,
+								annotations: tool.annotations,
+							});
+						}
 						return JSON.stringify(await tool.execute(args as never, options));
 					} catch (error) {
 						// Returned, not thrown, so the agent can read the message and correct itself.

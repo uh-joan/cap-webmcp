@@ -6,6 +6,7 @@ import { registerAnalyticsTools } from "./analyticsTools";
 import { registerBillingTools } from "./billingTools";
 import { registerCapAiTools } from "./capAiTools";
 import { registerCommentTools } from "./commentTools";
+import { webConfirmHandler } from "./confirm";
 import { type LibraryRpc, registerLibraryTools } from "./libraryTools";
 import { registerLoomTools } from "./loomTools";
 import { registerSettingsTools } from "./settingsTools";
@@ -17,6 +18,7 @@ import {
 	MUTATING,
 	READ_ONLY,
 	registerWebMcpTool,
+	setWebMcpConfirmHandler,
 	withWebMcpGroup,
 } from "./webmcp.service";
 
@@ -33,6 +35,7 @@ export function useCapWebMcp() {
 
 	useEffect(() => {
 		const unregister: Array<() => void> = [];
+		setWebMcpConfirmHandler(webConfirmHandler);
 
 		withWebMcpGroup("Navigation & orientation", "global", () => {
 			unregister.push(
@@ -128,6 +131,7 @@ export function useCapWebMcp() {
 
 		return () => {
 			for (const fn of unregister.splice(0)) fn();
+			setWebMcpConfirmHandler(null);
 		};
 	}, [rpc]);
 }
