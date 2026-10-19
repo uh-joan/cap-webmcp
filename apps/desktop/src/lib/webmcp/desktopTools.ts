@@ -4,6 +4,7 @@ import {
 	type RecordingMode,
 	type ScreenCaptureTarget,
 } from "../../utils/tauri";
+import { requireConfirm } from "./confirm";
 import {
 	CONFIRM,
 	MUTATING,
@@ -229,6 +230,9 @@ export function registerDesktopTools(): Array<() => void> {
 			description: "Discard the current recording and start it over.",
 			annotations: CONFIRM,
 			execute: async () => {
+				await requireConfirm(
+					"Discard the current recording and start it over?",
+				);
 				const result = await commands.restartRecording();
 				return { restarted: true, result };
 			},
@@ -243,6 +247,9 @@ export function registerDesktopTools(): Array<() => void> {
 				"cannot be undone.",
 			annotations: CONFIRM,
 			execute: async () => {
+				await requireConfirm(
+					"Delete the in-progress recording and discard its captured data? This cannot be undone.",
+				);
 				await commands.deleteRecording();
 				return { deleted: true };
 			},

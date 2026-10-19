@@ -1,4 +1,5 @@
 import { commands } from "../../utils/tauri";
+import { requireConfirm } from "./confirm";
 import {
 	CONFIRM,
 	MUTATING,
@@ -91,6 +92,9 @@ export function registerLibraryRecoveryTools(): Array<() => void> {
 			execute: async ({ projectPath }) => {
 				const path = String(projectPath ?? "").trim();
 				if (!path) throw new Error("projectPath must not be empty.");
+				await requireConfirm(
+					"Permanently discard this incomplete recording? This cannot be undone.",
+				);
 				await commands.discardIncompleteRecording(path);
 				return { discarded: path };
 			},
