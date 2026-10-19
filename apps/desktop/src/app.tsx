@@ -15,6 +15,7 @@ import {
 	lazy,
 	onCleanup,
 	onMount,
+	Show,
 	Suspense,
 } from "solid-js";
 import { Toaster } from "solid-toast";
@@ -24,6 +25,7 @@ import "unfonts.css";
 import "./styles/theme.css";
 
 import { CapErrorBoundary } from "./components/CapErrorBoundary";
+import { WebMcpWidget } from "./lib/webmcp/WebMcpWidget";
 import WindowChromeLayout from "./routes/(window-chrome)";
 import SettingsLayout from "./routes/(window-chrome)/settings";
 import { authStore, generalSettingsStore } from "./store";
@@ -272,6 +274,9 @@ function Inner() {
 					/>
 				</Router>
 			</CapErrorBoundary>
+			<Show when={currentWindow.label === "main"}>
+				<WebMcpWidget />
+			</Show>
 		</>
 	);
 }

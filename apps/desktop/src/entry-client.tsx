@@ -1,5 +1,6 @@
 // @refresh reload
 import { mount, StartClient } from "@solidjs/start/client";
+import { initCapWebMcp } from "./lib/webmcp";
 
 function initPlatformClass() {
 	import("@tauri-apps/plugin-os")
@@ -27,6 +28,7 @@ async function initApp() {
 
 	mount(() => <StartClient />, app);
 	initPlatformClass();
+	initCapWebMcp();
 }
 
 void initApp();
