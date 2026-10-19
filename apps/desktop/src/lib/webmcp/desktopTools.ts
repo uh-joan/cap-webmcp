@@ -24,6 +24,10 @@ const OS_PERMISSIONS: OSPermission[] = [
 function toCaptureTarget(target: {
 	type: string;
 	id?: string;
+	x?: number;
+	y?: number;
+	width?: number;
+	height?: number;
 }): ScreenCaptureTarget {
 	switch (target.type) {
 		case "display":
@@ -34,11 +38,32 @@ function toCaptureTarget(target: {
 			if (!target.id)
 				throw new Error("A window id is required (from list_windows).");
 			return { variant: "window", id: target.id };
+		case "area": {
+			if (!target.id)
+				throw new Error(
+					"A screen (display) id is required for an area capture (from list_screens).",
+				);
+			const { x, y, width, height } = target;
+			if (
+				typeof x !== "number" ||
+				typeof y !== "number" ||
+				typeof width !== "number" ||
+				typeof height !== "number"
+			)
+				throw new Error(
+					"An area capture requires numeric x, y, width, and height.",
+				);
+			return {
+				variant: "area",
+				screen: target.id,
+				bounds: { position: { x, y }, size: { width, height } },
+			};
+		}
 		case "cameraOnly":
 			return { variant: "cameraOnly" };
 		default:
 			throw new Error(
-				`target.type must be 'display', 'window', or 'cameraOnly'. Got "${target.type}".`,
+				`target.type must be 'display', 'window', 'area', or 'cameraOnly'. Got "${target.type}".`,
 			);
 	}
 }
@@ -48,15 +73,25 @@ const CAPTURE_TARGET_SCHEMA = {
 	properties: {
 		type: {
 			type: "string",
-			enum: ["display", "window", "cameraOnly"],
+			enum: ["display", "window", "area", "cameraOnly"],
 			description: "What to capture.",
 		},
 		id: {
 			type: "string",
 			description:
-				"Display id (from list_screens) or window id (from list_windows). " +
-				"Omit for 'cameraOnly'.",
+				"Display id (from list_screens) for 'display' or 'area', or window id " +
+				"(from list_windows) for 'window'. Omit for 'cameraOnly'.",
 		},
+		x: {
+			type: "number",
+			description: "Area left, in logical pixels ('area' only).",
+		},
+		y: {
+			type: "number",
+			description: "Area top, in logical pixels ('area' only).",
+		},
+		width: { type: "number", description: "Area width ('area' only)." },
+		height: { type: "number", description: "Area height ('area' only)." },
 	},
 	required: ["type"],
 } as const;
@@ -186,16 +221,24 @@ export function registerDesktopTools(): Array<() => void> {
 
 	unregister.push(
 		registerWebMcpTool<{
-			target: { type: string; id?: string };
+			target: {
+				type: string;
+				id?: string;
+				x?: number;
+				y?: number;
+				width?: number;
+				height?: number;
+			};
 			mode?: RecordingMode;
 			captureSystemAudio?: boolean;
 		}>({
 			name: "start_recording",
 			description:
-				"Start a recording of a display, window, or camera-only. Get display " +
-				"ids from list_screens and window ids from list_windows. `mode` is " +
-				"'studio' (default) or 'instant'. Select camera/mic first with " +
-				"select_camera / select_mic if you want them included.",
+				"Start a recording of a display, window, a rectangular area of a " +
+				"display, or camera-only. Get display ids from list_screens and window " +
+				"ids from list_windows; for 'area' pass the display id plus x/y/width/" +
+				"height. `mode` is 'studio' (default) or 'instant'. Select camera/mic " +
+				"first with select_camera / select_mic if you want them included.",
 			annotations: MUTATING,
 			inputSchema: {
 				type: "object",
@@ -257,7 +300,16 @@ export function registerDesktopTools(): Array<() => void> {
 	);
 
 	unregister.push(
-		registerWebMcpTool<{ target: { type: string; id?: string } }>({
+		registerWebMcpTool<{
+			target: {
+				type: string;
+				id?: string;
+				x?: number;
+				y?: number;
+				width?: number;
+				height?: number;
+			};
+		}>({
 			name: "take_screenshot",
 			description:
 				"Capture a still screenshot of a display or window. Returns the saved " +
