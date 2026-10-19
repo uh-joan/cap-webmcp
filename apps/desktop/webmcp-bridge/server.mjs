@@ -196,6 +196,15 @@ function startWebSocketServer() {
 		ws.on("error", () => {});
 	});
 	wss.on("error", (error) => {
+		if (error && error.code === "EADDRINUSE") {
+			// Another bridge already owns the port (e.g. an orphan from a previous
+			// connect). Exit loudly instead of running without a webview, so the
+			// client shows a failure rather than a silent "no tools".
+			process.stderr.write(
+				`[cap-webmcp-bridge] port ${PORT} is already in use by another bridge; exiting.\n`,
+			);
+			process.exit(1);
+		}
 		process.stderr.write(`[cap-webmcp-bridge] ws error: ${error.message}\n`);
 	});
 	process.stderr.write(
@@ -204,8 +213,17 @@ function startWebSocketServer() {
 }
 
 async function main() {
+	// When the MCP client (e.g. Claude Code) detaches its stdio — including on a
+	// reconnect — exit so we release the WS port instead of lingering as an
+	// orphan that the next bridge then collides with.
+	const exit = () => process.exit(0);
+	process.stdin.on("end", exit);
+	process.stdin.on("close", exit);
+
 	startWebSocketServer();
-	await server.connect(new StdioServerTransport());
+	const transport = new StdioServerTransport();
+	transport.onclose = exit;
+	await server.connect(transport);
 }
 
 main().catch((error) => {
