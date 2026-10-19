@@ -1,3 +1,4 @@
+import { registerCaptionTools } from "./captionTools";
 import {
 	registerDesktopPermissionTools,
 	registerDesktopTools,
@@ -29,5 +30,8 @@ export function initCapWebMcp() {
 	});
 	withWebMcpGroup("Library & recovery", "global", () => {
 		registerLibraryRecoveryTools();
+	});
+	withWebMcpGroup("Captions", "global", () => {
+		registerCaptionTools();
 	});
 }
